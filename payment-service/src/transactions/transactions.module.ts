@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
+import { PrismaModule } from '../prisma/prisma.module';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
-import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],
   controllers: [TransactionsController],
-  providers: [TransactionsService],
+  providers: [TransactionsService, ApiKeyGuard],
 })
 export class TransactionsModule {}
