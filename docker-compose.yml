@@ -2,18 +2,56 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16
-
+    image: postgres:15
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: payments_db
-
     ports:
       - "5432:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payments_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payments_network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payments_db
+      PORT: 3000
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payments_network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    environment:
+      PORT: 4000
+      PAYMENT_SERVICE_URL: http://payment-service:3000
+      JWT_SECRET: PRUEBA_TECNICA_SECRET_KEY
+    ports:
+      - "3000:4000"
+    depends_on:
+      - payment-service
+    networks:
+      - payments_network
 
 volumes:
   postgres_data:
+
+networks:
+  payments_network:
+    driver: bridge
